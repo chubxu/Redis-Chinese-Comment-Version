@@ -2436,12 +2436,17 @@ void initServerConfig(void) {
     R_NegInf = -1.0/R_Zero;
     R_Nan = R_Zero/R_Zero;
 
-    /* Command table -- we initialize it here as it is part of the
-     * initial configuration, since command names may be changed via
-     * redis.conf using the rename-command directive. */
+
+    // 在这里进行初始化命令是因为，命令可能会在config配置文件中重定义name
+    // 初始化 commands 和 orig_commands 两个参数。其实就是初始化两个 dict 结构
     server.commands = dictCreate(&commandTableDictType,NULL);
     server.orig_commands = dictCreate(&commandTableDictType,NULL);
+
+    // 将定义好的命令查找表中的命令存放进 commands 和 orig_commands 这两个变量中
+    // 不同的是，commands中的命令会随着配置文件重定义的命令改变，orig_commands保持不变
     populateCommandTable();
+
+    // 下面的命令是常用命令，因此将他们定义在顶层，为了快速查找
     server.delCommand = lookupCommandByCString("del");
     server.multiCommand = lookupCommandByCString("multi");
     server.lpushCommand = lookupCommandByCString("lpush");
@@ -2457,7 +2462,8 @@ void initServerConfig(void) {
     server.xgroupCommand = lookupCommandByCString("xgroup");
     server.rpoplpushCommand = lookupCommandByCString("rpoplpush");
 
-    /* Debugging */
+
+    // 以下变量为了 debugging
     server.assert_failed = "<no assertion failed>";
     server.assert_file = "<no file>";
     server.assert_line = 0;
@@ -2470,6 +2476,7 @@ void initServerConfig(void) {
      * Redis 5. However it is possible to revert it via redis.conf. */
     server.lua_always_replicate_commands = 1;
 
+    // 根据配置文件中的值进行初始化
     initConfigValues();
 }
 
@@ -2835,9 +2842,9 @@ void initServer(void) {
     setupSignalHandlers();
     makeThreadKillable();
 
+    // 系统日志相关
     if (server.syslog_enabled) {
-        openlog(server.syslog_ident, LOG_PID | LOG_NDELAY | LOG_NOWAIT,
-            server.syslog_facility);
+        openlog(server.syslog_ident, LOG_PID | LOG_NDELAY | LOG_NOWAIT, server.syslog_facility);
     }
 
     /* Initialization after setting defaults from the config system. */
@@ -5359,6 +5366,7 @@ int main(int argc, char **argv) {
     dictSetHashFunctionSeed(hashseed);
     server.sentinel_mode = checkForSentinelMode(argc,argv);
 
+    // 初始化服务配置
     initServerConfig();
 
     ACLInit(); /* The ACL subsystem must be initialized ASAP because the
@@ -5475,7 +5483,10 @@ int main(int argc, char **argv) {
     }
 
     readOOMScoreAdj();
+
+    // 初始化redis服务器
     initServer();
+
     if (background || server.pidfile) createPidFile();
     redisSetProcTitle(argv[0]);
     redisAsciiArt();

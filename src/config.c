@@ -355,6 +355,9 @@ static int updateOOMScoreAdjValues(sds *args, char **err, int apply) {
     return C_OK;
 }
 
+/**
+ * 遍历redis支持的配置列表，初始化这些配置，并将其存放在server结构体的对应变量上
+ */
 void initConfigValues() {
     for (standardConfig *config = configs; config->name != NULL; config++) {
         config->interface.init(config->data);
@@ -2264,6 +2267,7 @@ static int updateTlsCfgInt(long long val, long long prev, char **err) {
 }
 #endif  /* USE_OPENSSL */
 
+// redis支持的配置列表
 standardConfig configs[] = {
     /* Bool configs */
     createBoolConfig("rdbchecksum", NULL, IMMUTABLE_CONFIG, server.rdb_checksum, 1, NULL, NULL),
