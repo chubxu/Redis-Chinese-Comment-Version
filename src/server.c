@@ -1114,7 +1114,10 @@ err:
     if (!log_to_stdout) close(fd);
 }
 
-/* Return the UNIX time in microseconds */
+/**
+ * 返回当前的 UNIX 时间戳，微秒
+ * @return
+ */
 long long ustime(void) {
     struct timeval tv;
     long long ust;
@@ -2348,10 +2351,10 @@ void initServerConfig(void) {
     server.runid[CONFIG_RUN_ID_SIZE] = '\0';
     changeReplicationId();
     clearReplicationId2();
-    server.hz = CONFIG_DEFAULT_HZ; /* Initialize it ASAP, even if it may get
-                                      updated later after loading the config.
-                                      This value may be used before the server
-                                      is initialized. */
+
+    // 下面都是配置初始化，赋予零值（默认值）
+    // 尽快（ASAP）初始化这些参数是因为可能在服务器初始化前使用，尽管后面还要根据配置文件进行更新
+    server.hz = CONFIG_DEFAULT_HZ;
     server.timezone = getTimeZone(); /* Initialized by tzset(). */
     server.configfile = NULL;
     server.executable = NULL;
@@ -2382,8 +2385,7 @@ void initServerConfig(void) {
     server.active_defrag_running = 0;
     server.notify_keyspace_events = 0;
     server.blocked_clients = 0;
-    memset(server.blocked_clients_by_type,0,
-           sizeof(server.blocked_clients_by_type));
+    memset(server.blocked_clients_by_type, 0, sizeof(server.blocked_clients_by_type));
     server.shutdown_asap = 0;
     server.cluster_configfile = zstrdup(CONFIG_DEFAULT_CLUSTER_CONFIG_FILE);
     server.cluster_module_flags = CLUSTER_MODULE_FLAG_NONE;
@@ -3362,8 +3364,13 @@ void call(client *c, int flags) {
         updateCachedTime(0);
     }
 
+    // 开始时间
     start = server.ustime;
+
+    // 执行指令，调用命令查找表中命令对应的处理方法
     c->cmd->proc(c);
+
+    // 执行命令所用时间
     duration = ustime()-start;
     dirty = server.dirty-dirty;
     if (dirty < 0) dirty = 0;
@@ -3556,16 +3563,20 @@ int processCommand(client *c) {
      * go through checking for replication and QUIT will cause trouble
      * when FORCE_REPLICATION is enabled and would be implemented in
      * a regular command proc. */
+    // 当执行的命令为 quit 时，进入该分支
     if (!strcasecmp(c->argv[0]->ptr,"quit")) {
         addReply(c,shared.ok);
         c->flags |= CLIENT_CLOSE_AFTER_REPLY;
         return C_ERR;
     }
 
-    /* Now lookup the command and check ASAP about trivial error conditions
-     * such as wrong arity, bad command name and so forth. */
+
+    // 寻找command对应的处理方法
     c->cmd = c->lastcmd = lookupCommand(c->argv[0]->ptr);
+
+    // 对一些问题（错误命令名称、错误的命令参数）进行处理
     if (!c->cmd) {
+        // 如果command没有找到（表示command输入错误），则输出错误信息，并free相关资源
         sds args = sdsempty();
         int i;
         for (i=1; i < c->argc && sdslen(args) < 128; i++)
@@ -3574,10 +3585,9 @@ int processCommand(client *c) {
             (char*)c->argv[0]->ptr, args);
         sdsfree(args);
         return C_OK;
-    } else if ((c->cmd->arity > 0 && c->cmd->arity != c->argc) ||
-               (c->argc < -c->cmd->arity)) {
-        rejectCommandFormat(c,"wrong number of arguments for '%s' command",
-            c->cmd->name);
+    } else if ((c->cmd->arity > 0 && c->cmd->arity != c->argc) || (c->argc < -c->cmd->arity)) {
+        // 如果指令跟随的参数不正确，则输出错误信息
+        rejectCommandFormat(c,"wrong number of arguments for '%s' command", c->cmd->name);
         return C_OK;
     }
 
@@ -3601,6 +3611,7 @@ int processCommand(client *c) {
 
     /* Check if the user can run this command according to the current
      * ACLs. */
+    // 访问控制，查看当前命令用户是否允许访问
     int acl_keypos;
     int acl_retval = ACLCheckCommandPerm(c,&acl_keypos);
     if (acl_retval != ACL_OK) {
@@ -3620,6 +3631,7 @@ int processCommand(client *c) {
      * However we don't perform the redirection if:
      * 1) The sender of this command is our master.
      * 2) The command has no key arguments. */
+    // 集群处理
     if (server.cluster_enabled &&
         !(c->flags & CLIENT_MASTER) &&
         !(c->flags & CLIENT_LUA &&
@@ -5346,7 +5358,9 @@ int main(int argc, char **argv) {
     getRandomBytes(hashseed,sizeof(hashseed));
     dictSetHashFunctionSeed(hashseed);
     server.sentinel_mode = checkForSentinelMode(argc,argv);
+
     initServerConfig();
+
     ACLInit(); /* The ACL subsystem must be initialized ASAP because the
                   basic networking code and client creation depends on it. */
     moduleInitModulesSystem();

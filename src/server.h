@@ -462,18 +462,20 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
 #define serverAssert(_e) ((_e)?(void)0 : (_serverAssert(#_e,__FILE__,__LINE__),_exit(1)))
 #define serverPanic(...) _serverPanic(__FILE__,__LINE__,__VA_ARGS__),_exit(1)
 
-/*-----------------------------------------------------------------------------
- * Data types
- *----------------------------------------------------------------------------*/
 
-/* A redis object, that is a type able to hold a string / list / set */
-
-/* The actual Redis Object */
-#define OBJ_STRING 0    /* String object. */
-#define OBJ_LIST 1      /* List object. */
-#define OBJ_SET 2       /* Set object. */
-#define OBJ_ZSET 3      /* Sorted set object. */
-#define OBJ_HASH 4      /* Hash object. */
+/**-----------------------------------------------------------------------------
+ * redis支持的数据结构
+ * OBJ_STRING: String
+ * OBJ_LIST: List
+ * OBJ_SET: Set
+ * OBJ_ZSET: Sorted set
+ * OBJ_HASH: Hash
+ -----------------------------------------------------------------------------*/
+#define OBJ_STRING 0
+#define OBJ_LIST 1
+#define OBJ_SET 2
+#define OBJ_ZSET 3
+#define OBJ_HASH 4
 
 /* The "module" object type is a special one that signals that the object
  * is one directly managed by a Redis module. In this case the value points
@@ -602,9 +604,16 @@ typedef struct RedisModuleDigest {
     memset(mdvar.x,0,sizeof(mdvar.x)); \
 } while(0);
 
-/* Objects encoding. Some kind of objects like Strings and Hashes can be
- * internally represented in multiple ways. The 'encoding' field of the object
- * is set to one of this fields for this object. */
+
+/**-----------------------------------------------------------------------------
+ * redis的对象编码编码结构
+ * 像String、Hashes等数据结构在内部可以通过多种方式表示
+ * 而 encoding 字段则用于表示这些数据结构的编码方式
+ * OBJ_ENCODING_INT: 当String类型保存的是数字时使用该编码
+ * OBJ_ENCODING_EMBSTR: 当String类型保存的是短字符串时使用该编码
+ * OBJ_ENCODING_RAW: 当String类型保存的是长字符串时使用该编码
+ *
+ -----------------------------------------------------------------------------*/
 #define OBJ_ENCODING_RAW 0     /* Raw representation */
 #define OBJ_ENCODING_INT 1     /* Encoded as integer */
 #define OBJ_ENCODING_HT 2      /* Encoded as hash table */
@@ -616,6 +625,7 @@ typedef struct RedisModuleDigest {
 #define OBJ_ENCODING_EMBSTR 8  /* Embedded sds string encoding */
 #define OBJ_ENCODING_QUICKLIST 9 /* Encoded as linked list of ziplists */
 #define OBJ_ENCODING_STREAM 10 /* Encoded as a radix tree of listpacks */
+
 
 #define LRU_BITS 24
 #define LRU_CLOCK_MAX ((1<<LRU_BITS)-1) /* Max value of obj->lru */
