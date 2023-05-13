@@ -1,0 +1,25 @@
+F:\cygwin64\bin\cmake.exe -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/usr/bin/make.exe -DCMAKE_C_COMPILER=/usr/bin/gcc.exe -DCMAKE_CXX_COMPILER=/usr/bin/g++.exe -G "CodeBlocks - Unix Makefiles" -S /cygdrive/h/Code/UserOpensourceCode/Redis-Chinese-Comment-Version -B /cygdrive/h/Code/UserOpensourceCode/Redis-Chinese-Comment-Version/cmake-build-debug
+-- The C compiler identification is GNU 11.2.0
+-- The CXX compiler identification is GNU 11.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/g++.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMAKE_RUNTIME_OUTPUT_DIRECTORYis:/cygdrive/h/Code/UserOpensourceCode/Redis-Chinese-Comment-Version/cmake-build-debug/../src
+-- No build type defined; defaulting to 'Debug'
+-- Host is: CYGWIN-3.4.6-1.x86_64. Build target is:
+CYGWIN-3.4.6-1.x86_64
+-- Project root directory is: /cygdrive/h/Code/UserOpensourceCode/Redis-Chinese-Comment-Version
+-- Generating release.h...
+#define REDIS_GIT_SHA1 "00000000"
+#define REDIS_GIT_DIRTY "0"
+Detected version: 0.14.0
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /cygdrive/h/Code/UserOpensourceCode/Redis-Chinese-Comment-Version/cmake-build-debug
