@@ -346,7 +346,7 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
 #define LL_WARNING 3
 #define LL_RAW (1<<10) /* Modifier to log without timestamp */
 
-/* Supervision options */
+/* 监督模式 宏 */
 #define SUPERVISED_NONE 0
 #define SUPERVISED_AUTODETECT 1
 #define SUPERVISED_SYSTEMD 2

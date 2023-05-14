@@ -2267,7 +2267,7 @@ static int updateTlsCfgInt(long long val, long long prev, char **err) {
 }
 #endif  /* USE_OPENSSL */
 
-// redis支持的配置列表
+// redis支持的配置列表，和配置文件中的值相同
 standardConfig configs[] = {
     /* Bool configs */
     createBoolConfig("rdbchecksum", NULL, IMMUTABLE_CONFIG, server.rdb_checksum, 1, NULL, NULL),

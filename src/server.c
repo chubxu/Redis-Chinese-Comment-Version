@@ -2476,7 +2476,7 @@ void initServerConfig(void) {
      * Redis 5. However it is possible to revert it via redis.conf. */
     server.lua_always_replicate_commands = 1;
 
-    // 根据配置文件中的值进行初始化
+    // 根据配置查找表中的值进行初始化
     initConfigValues();
 }
 
@@ -5369,13 +5369,18 @@ int main(int argc, char **argv) {
     // 初始化服务配置
     initServerConfig();
 
-    ACLInit(); /* The ACL subsystem must be initialized ASAP because the
-                  basic networking code and client creation depends on it. */
+    // ACL系统必须尽快初始化，因为基础的网络代码和客户端的创建都需要依赖该系统
+    ACLInit();
+
+    // 模块系统初始化
     moduleInitModulesSystem();
+
+    // no op
     tlsInit();
 
-    /* Store the executable path and arguments in a safe place in order
-     * to be able to restart the server later. */
+    // 拷贝一份执行文件和参数，以便重启时使用
+    // argv[0]是执行二进制文件路径
+    // argv[1:]是执行参数
     server.executable = getAbsolutePath(argv[0]);
     server.exec_argv = zmalloc(sizeof(char*)*(argc+1));
     server.exec_argv[argc] = NULL;
@@ -5384,6 +5389,7 @@ int main(int argc, char **argv) {
     /* We need to init sentinel right now as parsing the configuration file
      * in sentinel mode will have the effect of populating the sentinel
      * data structures with master nodes to monitor. */
+    // 如果是哨兵模式，需要立即初始化
     if (server.sentinel_mode) {
         initSentinelConfig();
         initSentinel();
@@ -5392,21 +5398,30 @@ int main(int argc, char **argv) {
     /* Check if we need to start in redis-check-rdb/aof mode. We just execute
      * the program main. However the program is part of the Redis executable
      * so that we can easily execute an RDB check on loading errors. */
+    // 检查rdb aof模式
     if (strstr(argv[0],"redis-check-rdb") != NULL)
         redis_check_rdb_main(argc,argv,NULL);
     else if (strstr(argv[0],"redis-check-aof") != NULL)
         redis_check_aof_main(argc,argv);
 
+    // 解析执行参数 (start)
+    // 第一个参数是 redis-server，是执行的二进制文件
+    // 如果执行参数 >= 2，说明还包含了其它执行参数，这里进行解析
     if (argc >= 2) {
-        j = 1; /* First option to parse in argv[] */
+        // 第0个是二进制文件，不需要解析，从第1个参数开始解析
+        j = 1;
         sds options = sdsempty();
+
+        // 初始化配置文件地址
         char *configfile = NULL;
 
-        /* Handle special options --help and --version */
+        // 处理比较特殊的参数，-v和-h，只需要在控制台打印一些信息，然后返回即可
         if (strcmp(argv[1], "-v") == 0 ||
             strcmp(argv[1], "--version") == 0) version();
         if (strcmp(argv[1], "--help") == 0 ||
             strcmp(argv[1], "-h") == 0) usage();
+
+        // 测试内存
         if (strcmp(argv[1], "--test-memory") == 0) {
             if (argc == 3) {
                 memtest(atoi(argv[2]),50);
@@ -5418,12 +5433,11 @@ int main(int argc, char **argv) {
             }
         }
 
-        /* First argument is the config file name? */
+        // 判断第一个参数是否是配置文件的路径
         if (argv[j][0] != '-' || argv[j][1] != '-') {
             configfile = argv[j];
             server.configfile = getAbsolutePath(configfile);
-            /* Replace the config file in server.exec_argv with
-             * its absolute path. */
+            // 替换为绝对路径
             zfree(server.exec_argv[j]);
             server.exec_argv[j] = zstrdup(server.configfile);
             j++;
@@ -5433,6 +5447,7 @@ int main(int argc, char **argv) {
          * configuration file. For instance --port 6380 will generate the
          * string "port 6380\n" to be parsed after the actual file name
          * is parsed, if any. */
+        // 解析其它参数，即argv[2:]后的参数，这里解析的基本都是配置文件中的参数
         while(j != argc) {
             if (argv[j][0] == '-' && argv[j][1] == '-') {
                 /* Option name */
@@ -5451,6 +5466,7 @@ int main(int argc, char **argv) {
             }
             j++;
         }
+
         if (server.sentinel_mode && configfile && *configfile == '-') {
             serverLog(LL_WARNING,
                 "Sentinel config from STDIN not allowed.");
@@ -5458,15 +5474,20 @@ int main(int argc, char **argv) {
                 "Sentinel needs config file on disk to save state.  Exiting...");
             exit(1);
         }
+
+        // 重置server 的 save params
         resetServerSaveParams();
+        // 加载配置文件的配置（configfile）和执行参数的配置（options）
         loadServerConfig(configfile,options);
         sdsfree(options);
     }
+    // 解析执行参数 (end)
 
     server.supervised = redisIsSupervised(server.supervised_mode);
     int background = server.daemonize && !server.supervised;
     if (background) daemonize();
 
+    // 输出一些信息
     serverLog(LL_WARNING, "oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo");
     serverLog(LL_WARNING,
         "Redis version=%s, bits=%d, commit=%s, modified=%d, pid=%d, just started",
@@ -5476,24 +5497,33 @@ int main(int argc, char **argv) {
             strtol(redisGitDirty(),NULL,10) > 0,
             (int)getpid());
 
+    // 配置文件加载提示
     if (argc == 1) {
         serverLog(LL_WARNING, "Warning: no config file specified, using the default config. In order to specify a config file use %s /path/to/%s.conf", argv[0], server.sentinel_mode ? "sentinel" : "redis");
     } else {
         serverLog(LL_WARNING, "Configuration loaded");
     }
 
+    // TODO readOOMScoreAdj 暂时不知道干啥
     readOOMScoreAdj();
 
     // 初始化redis服务器
     initServer();
 
+    // 根据需要是否创建pid file
     if (background || server.pidfile) createPidFile();
+
+    // 设置进程名称
     redisSetProcTitle(argv[0]);
+
+    // 以 ascii 打印 logo 及 相关信息
     redisAsciiArt();
+
+    // 校验tcp backlog 设置
     checkTcpBacklogSettings();
 
     if (!server.sentinel_mode) {
-        /* Things not needed when running in Sentinel mode. */
+        // 在非哨兵模式下需要的工作
         serverLog(LL_WARNING,"Server initialized");
     #ifdef __linux__
         linuxMemoryWarnings();
@@ -5513,11 +5543,18 @@ int main(int argc, char **argv) {
             }
         }
     #endif /* __arm64__ */
-    #endif /* __linux__ */
+    #endif
+
         moduleLoadFromQueue();
         ACLLoadUsersAtStartup();
+
+        // 服务器初始化的最后一些事情
         InitServerLast();
+
+        // 加载 RDB 或者 AOF 文件
         loadDataFromDisk();
+
+        // 如果是集群模式
         if (server.cluster_enabled) {
             if (verifyClusterConfigWithData() == C_ERR) {
                 serverLog(LL_WARNING,
@@ -5547,7 +5584,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    /* Warning the user about suspicious maxmemory setting. */
+    // 警告用户有关可疑的 maxmemory 设置。
     if (server.maxmemory > 0 && server.maxmemory < 1024*1024) {
         serverLog(LL_WARNING,"WARNING: You specified a maxmemory value that is less than 1MB (current value is %llu bytes). Are you sure this is what you really want?", server.maxmemory);
     }
@@ -5555,7 +5592,10 @@ int main(int argc, char **argv) {
     redisSetCpuAffinity(server.server_cpulist);
     setOOMScoreAdj(-1);
 
+    // 启动 reactor
     aeMain(server.el);
+
+    // 删除eventloop，准备退出进程
     aeDeleteEventLoop(server.el);
     return 0;
 }
