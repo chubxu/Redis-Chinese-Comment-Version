@@ -2722,16 +2722,15 @@ void checkTcpBacklogSettings(void) {
 int listenToPort(int port, int *fds, int *count) {
     int j;
 
-    /* Force binding of 0.0.0.0 if no bind address is specified, always
-     * entering the loop if j == 0. */
+
+    // 没有执行绑定地址的话，则绑定0.0.0.0
     if (server.bindaddr_count == 0) server.bindaddr[0] = NULL;
     for (j = 0; j < server.bindaddr_count || j == 0; j++) {
         if (server.bindaddr[j] == NULL) {
             int unsupported = 0;
             /* Bind * for both IPv6 and IPv4, we enter here only if
              * server.bindaddr_count == 0. */
-            fds[*count] = anetTcp6Server(server.neterr,port,NULL,
-                server.tcp_backlog);
+            fds[*count] = anetTcp6Server(server.neterr,port,NULL, server.tcp_backlog);
             if (fds[*count] != ANET_ERR) {
                 anetNonBlock(NULL,fds[*count]);
                 (*count)++;
@@ -2762,8 +2761,7 @@ int listenToPort(int port, int *fds, int *count) {
                 server.tcp_backlog);
         } else {
             /* Bind IPv4 address. */
-            fds[*count] = anetTcpServer(server.neterr,port,server.bindaddr[j],
-                server.tcp_backlog);
+            fds[*count] = anetTcpServer(server.neterr, port, server.bindaddr[j], server.tcp_backlog);
         }
         if (fds[*count] == ANET_ERR) {
             int net_errno = errno;
@@ -2886,6 +2884,7 @@ void initServer(void) {
     adjustOpenFilesLimit();
 
     // 创建reactor模型（epoll_create），如果创建失败，直接退出。el是处理命令的关键
+    // event loop 的个数为 server.maxclients(默认10000) + 32 + 96
     server.el = aeCreateEventLoop(server.maxclients+CONFIG_FDSET_INCR);
     if (server.el == NULL) {
         serverLog(LL_WARNING, "Failed creating the event loop. Error message: '%s'", strerror(errno));
